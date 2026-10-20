@@ -40,21 +40,21 @@ export function FinaleOverlay() {
             <span className="display">ROADSTER</span>
           </span>
         </h2>
-        <div className="finale__sub">
+        {/* <div className="finale__sub">
           <span className="mask" data-s="finale-line">
             <span>An interactive fan concept — drawn, built, flown and lit in real time in your browser.</span>
           </span>
-        </div>
+        </div> */}
         <div className="finale__ctas" data-s="finale-credit-cta">
           <a className="finale__cta" href="/reserve">Reserve yours</a>
           <a className="finale__cta finale__cta--ghost" href="/invest">Invest &amp; partner</a>
         </div>
       </div>
       <footer className="finale__credit mono" data-s="finale-credit">
-        <span>
+        {/* <span>
           <strong>Demo by Philip Ojo Oladeji</strong>
         </span>
-        <span>Unofficial Tesla Roadster Fan Concept — Not Affiliated with Tesla.</span>
+        <span>Unofficial Tesla Roadster Fan Concept — Not Affiliated with Tesla.</span> */}
         <span>
           {source === "gltf"
             ? "3D model: “Tesla Roadster (2028).” by morolucky · CC BY 4.0"
