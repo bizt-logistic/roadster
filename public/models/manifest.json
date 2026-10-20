@@ -1,0 +1,25 @@
+{
+  "model": "/models/roadster.glb",
+  "dims": {
+    "length": 4.5,
+    "height": 1.1067,
+    "width": 1.8856,
+    "axles": [
+      -1.4,
+      1.4
+    ],
+    "wheelR": 0.3431
+  },
+  "materials": {
+    "paint": [
+      "Material.001"
+    ],
+    "glass": []
+  },
+  "wheelNodes": [],
+  "source": {
+    "file": "tesla_roadster_2028.glb",
+    "front": "+z",
+    "scale": 3.8717336313967188
+  }
+}
