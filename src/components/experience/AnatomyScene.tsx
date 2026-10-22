@@ -8,7 +8,7 @@ export const ANATOMY_ITEMS = [
   { key: "motors", title: "Motors", spec: "Two rear motors · 1,000+ kW claimed" },
   { key: "tanks", title: "Gas tanks", spec: "Composite vessels · ~200 L (Thrust), +400 L in the passenger seat (Rocket)" },
   { key: "thrusters", title: "Cold-gas thrusters", spec: "4 rear nozzles (Thrust) · 10 around the body (Rocket)" },
-  { key: "fan", title: "Suction fan", spec: "Fan + ground-sealing skirt — holds the car to a surface, even upside down" },
+  { key: "fan", title: "Suction fan", spec: "Fan + ground-sealing skirt that holds the car to a surface, even upside down" },
 ] as const;
 
 export function AnatomyOverlay() {
@@ -17,7 +17,7 @@ export function AnatomyOverlay() {
       <div className="anat__copy">
         <div className="mono eyebrow">
           <span className="mask" data-s="anat-line">
-            <span>05 — Anatomy</span>
+            <span>05 · Anatomy</span>
           </span>
         </div>
         <h2 id="anat-title">

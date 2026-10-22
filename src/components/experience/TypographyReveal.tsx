@@ -82,7 +82,9 @@ export function TypographyBackdrop() {
         <div className="type__rule" data-s="type-rule" style={{ transform: "scaleX(0)" }} />
         <div className="type__line">
           <span className="mask" data-s="type-line">
-            <span>Roadster — an interactive fan concept.</span>
+            <span>
+              Roadster, an interactive concept.
+            </span>
           </span>
         </div>
         <div className="mono" style={{ textAlign: "right" }}>

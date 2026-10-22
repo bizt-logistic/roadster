@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CommerceShell } from "@/components/commerce/CommerceShell";
 
 export const metadata: Metadata = {
-  title: "Gallery — Roadster Fan Concept (Demo)",
+  title: "Gallery | Roadster Concept",
   description: "Studio renders of the Roadster concept model. Not affiliated with Tesla.",
 };
 
@@ -35,7 +35,7 @@ export default function Gallery() {
               src={`/images/gallery/${s.id}.webp`}
               srcSet={`/images/gallery/${s.id}-sm.webp 800w, /images/gallery/${s.id}.webp 1600w`}
               sizes="(max-width: 900px) 100vw, 1200px"
-              alt={`Roadster concept — ${s.title.toLowerCase()} (3D render)`}
+              alt={`Roadster concept, ${s.title.toLowerCase()} (3D render)`}
               loading={i < 2 ? "eager" : "lazy"}
               width={1600}
               height={1000}

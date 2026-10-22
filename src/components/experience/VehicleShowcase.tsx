@@ -80,7 +80,7 @@ export function ShowcaseOverlay() {
     <section className="showcase-head" aria-labelledby="showcase-title">
       <div className="mono eyebrow" style={{ margin: 0 }}>
         <span className="mask" data-s="showcase-head">
-          <span>03 — Perspectives</span>
+          <span>03 · Perspectives</span>
         </span>
       </div>
       <h2 id="showcase-title">

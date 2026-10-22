@@ -4,7 +4,46 @@
     {
       "name": "roadster-dev",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["node_modules/next/dist/bin/next", "dev", "--webpack", "--port", "3100"],
+      "runtimeArgs": [
+        "node_modules/next/dist/bin/next",
+        "dev",
+        "--webpack",
+        "--port",
+        "3100"
+      ],
+      "port": 3100
+    },
+    {
+      "name": "roadster-admin",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "admin-dashboard/node_modules/next/dist/bin/next",
+        "dev",
+        "admin-dashboard",
+        "--webpack",
+        "--port",
+        "3200"
+      ],
+      "port": 3200
+    },
+    {
+      "name": "video-workspace",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "video/tools/serve.mjs",
+        "3300"
+      ],
+      "port": 3300
+    },
+    {
+      "name": "roadster-prod",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "node_modules/next/dist/bin/next",
+        "start",
+        "--port",
+        "3100"
+      ],
       "port": 3100
     }
   ]

@@ -3,14 +3,14 @@ import { CommerceShell } from "@/components/commerce/CommerceShell";
 import { InvestForm } from "@/components/commerce/InvestForm";
 
 export const metadata: Metadata = {
-  title: "Invest & partner",
-  description: "Register interest in partnerships, distribution or investment ",
+  title: "Invest & partner | Roadster Concept",
+  description: "Register interest in partnerships, distribution or investment. Interest registration only, not an offer of securities.",
 };
 
 const PILLARS = [
   { k: "01", t: "Distribution", d: "Dealer and import partners for West Africa and beyond." },
   { k: "02", t: "Fleet & corporate", d: "Executive fleets, hospitality and events." },
-  { k: "03", t: "Strategic investment", d: "Conversations with qualified investors — interest only, no funds collected here." },
+  { k: "03", t: "Strategic investment", d: "Conversations with qualified investors. Interest only, no funds collected here." },
 ];
 
 export default function InvestPage() {
@@ -21,7 +21,7 @@ export default function InvestPage() {
           <p className="mono eyebrow">Invest &amp; partner</p>
           <h1>Back the next line.</h1>
           <p>
-            Interested in distribution, fleet orders or investment? Register your interest and the team follows up.
+            Interested in distribution, fleet orders or investment? Register your interest and the team follows up. This form records your details only. No money is collected.
           </p>
           <ol className="pillars">
             {PILLARS.map((p) => (

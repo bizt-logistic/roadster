@@ -26,7 +26,7 @@ export function PerformanceOverlay() {
   return (
     <section aria-labelledby="perf-title">
       <h2 id="perf-title" className="sr-only">
-        Roadster performance — figures from the October 2026 reveal
+        Roadster performance: figures from the October 2026 reveal
       </h2>
       <dl className="stats" data-s="stats">
         {CONCEPT_FIGURES.map((f) => (
@@ -44,7 +44,7 @@ export function PerformanceOverlay() {
         ))}
       </dl>
       <p className="perf-note" data-s="perf-note">
-        Tesla claims from the 15 Oct 2026 reveal (production planned for 2028). The 0.81 s run was a driverless demo with
+        Tesla claims from the 15 Oct 2026 reveal (production planned for 2028). The 0.81 s run was a driverless demonstration run with
         cold-gas thrusters engaged and was not independently timed. Trims: {TRIMS.map((t) => `${t.name} ${t.zeroToSixty}`).join(" · ")}.
       </p>
     </section>

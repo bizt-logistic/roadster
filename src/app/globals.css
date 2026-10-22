@@ -277,46 +277,6 @@ a.nav__cta {
   }
 }
 
-/* ── loader ──────────────────────────────────────────────────────────── */
-.loader {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  background: var(--white);
-  display: grid;
-  place-items: center;
-  clip-path: inset(0% 0% 0% 0%);
-}
-.loader__inner {
-  width: min(320px, 70vw);
-  display: grid;
-  gap: 18px;
-}
-.loader__brand {
-  font-family: var(--font-display);
-  font-size: 13px;
-  letter-spacing: 0.5em;
-  text-align: center;
-}
-.loader__bar {
-  height: 1px;
-  background: var(--rule);
-  position: relative;
-  overflow: hidden;
-}
-.loader__fill {
-  position: absolute;
-  inset: 0;
-  background: var(--ink);
-  transform-origin: left;
-  transition: transform 0.4s ease-out;
-}
-.loader__meta {
-  display: flex;
-  justify-content: space-between;
-  color: var(--ink-soft);
-}
-
 /* ── scene 1–2: intro ────────────────────────────────────────────────── */
 .intro-copy {
   position: absolute;
@@ -942,8 +902,10 @@ a.nav__cta {
 
 /* ── credits dialog ──────────────────────────────────────────────────── */
 .credits {
-  width: min(640px, calc(100vw - 32px));
-  max-height: min(80vh, 760px);
+  width: min(720px, calc(100vw - 32px));
+  max-height: min(86vh, 860px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1px solid var(--rule);
   border-radius: 2px;
   padding: clamp(22px, 4vw, 40px);
@@ -969,6 +931,60 @@ a.nav__cta {
 }
 .credits a {
   color: var(--ink);
+}
+.credits__x {
+  position: sticky;
+  top: 0;
+  height: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+.credits__x button {
+  width: 36px;
+  height: 36px;
+  margin: -8px -8px 0 0;
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--ink);
+  font: 400 20px/1 var(--font-text);
+  cursor: pointer;
+}
+.credits__x button:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
+}
+.credits__eyebrow {
+  color: var(--red);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.credits__lead {
+  margin: 0 0 8px;
+  font-size: 15px !important;
+  color: var(--ink) !important;
+}
+.credits__block {
+  padding-top: 18px;
+  margin-top: 18px;
+  border-top: 1px solid var(--rule);
+}
+.credits__block h3 {
+  margin: 0 0 6px;
+  font: 600 14px/1.3 var(--font-text);
+  letter-spacing: -0.01em;
+}
+.credits__block h3 .mono {
+  color: var(--red);
+  font-size: 11px;
+  margin-right: 6px;
+}
+.credits__block ul {
+  margin: 0;
+}
+.credits__block li {
+  margin: 3px 0;
 }
 .credits__close {
   margin-top: 18px;

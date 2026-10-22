@@ -6,7 +6,7 @@ export function WireframeRevealOverlay() {
     <section className="form-copy" data-s="form-copy" aria-labelledby="form-title" style={{ opacity: 0 }}>
       <div className="mono eyebrow">
         <span className="mask" data-s="form-line">
-          <span>02 — Form</span>
+          <span>02 · Form</span>
         </span>
       </div>
       <h2 id="form-title">
@@ -21,7 +21,7 @@ export function WireframeRevealOverlay() {
         <span className="mask" data-s="form-line">
           <span>
             The lines you just watched being drawn are extracted from the same 3D model that now resolves into paint,
-            glass and light — so every stroke lands exactly on the car.
+            glass and light, so every stroke lands exactly on the car.
           </span>
         </span>
       </p>

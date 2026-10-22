@@ -1,14 +1,11 @@
 import type { ReactNode } from "react";
 
-export const CREDIT = "Demo by Philip Ojo Oladeji";
-export const DISCLAIMER = "Unofficial Tesla Roadster Fan Concept — Not Affiliated with Tesla.";
+export const CREDIT = "Concept design & development by Philip Ojo Oladeji";
+export const DISCLAIMER = "Unofficial concept · Not affiliated with Tesla, Inc.";
 
-export function CommerceShell({ children, active }: { children: ReactNode; active: "reserve" | "invest" | "gallery" }) {
+export function CommerceShell({ children, active }: { children: ReactNode; active: "reserve" | "invest" | "gallery" | "drive" }) {
   return (
     <div className="shop">
-      {/* <div className="shop__banner" role="note">
-        <strong>Concept demo · Test networks</strong> — payments run on Bitcoin testnet and Ethereum Sepolia; no real money moves and no vehicle is sold. {DISCLAIMER}
-      </div> */}
       <header className="shop__nav">
         {/* plain anchors: a full page load keeps the 3D experience's state fresh */}
         <a className="shop__brand" href="/">
@@ -18,6 +15,9 @@ export function CommerceShell({ children, active }: { children: ReactNode; activ
           <a href="/">Experience</a>
           <a href="/gallery" aria-current={active === "gallery" ? "page" : undefined}>
             Gallery
+          </a>
+          <a href="/test-drive" aria-current={active === "drive" ? "page" : undefined}>
+            Test drive
           </a>
           <a href="/reserve" aria-current={active === "reserve" ? "page" : undefined}>
             Reserve
@@ -29,11 +29,11 @@ export function CommerceShell({ children, active }: { children: ReactNode; activ
       </header>
       <main className="shop__main">{children}</main>
       <footer className="shop__footer">
-        {/* <span> */}
-          {/* <strong>{CREDIT}</strong>
+        <span>
+          <strong>{CREDIT}</strong>
         </span>
-        <span>{DISCLAIMER}</span> */}
-        <span>Figures and prices as reported from the 15 Oct 2026 reveal; Tesla claims, subject to change.</span>
+        <span>{DISCLAIMER}</span>
+        <span>Vehicle figures as reported from the 15 Oct 2026 reveal (Tesla claims, subject to change). Payments run on test networks.</span>
       </footer>
     </div>
   );

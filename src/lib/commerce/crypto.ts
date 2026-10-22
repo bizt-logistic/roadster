@@ -88,8 +88,8 @@ export function isBech32(addr: string, hrp: string) {
 export function validateAddress(network: Network, raw: string): { ok: true; address: string } | { ok: false; error: string } {
   const addr = raw.trim();
   if (network === "btc-testnet") {
-    if (/^(bc1|[13])/i.test(addr)) return { ok: false, error: "That is a Bitcoin MAINNET address. Demo mode accepts testnet only (tb1…, m…, n…, 2…)." };
-    if (/^tb1/i.test(addr)) return isBech32(addr, "tb") ? { ok: true, address: addr.toLowerCase() } : { ok: false, error: "Checksum failed — check the address." };
+    if (/^(bc1|[13])/i.test(addr)) return { ok: false, error: "That is a Bitcoin MAINNET address. Only testnet addresses are accepted (tb1…, m…, n…, 2…)." };
+    if (/^tb1/i.test(addr)) return isBech32(addr, "tb") ? { ok: true, address: addr.toLowerCase() } : { ok: false, error: "Checksum failed. Check the address." };
     if (/^[mn2][1-9A-HJ-NP-Za-km-z]{25,34}$/.test(addr)) return { ok: true, address: addr };
     return { ok: false, error: "Not a Bitcoin testnet address." };
   }

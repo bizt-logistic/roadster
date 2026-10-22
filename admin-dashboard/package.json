@@ -1,0 +1,23 @@
+{
+  "name": "roadster-admin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Standalone admin dashboard for the Roadster concept demo (test networks only).",
+  "scripts": {
+    "dev": "next dev --webpack --port 3200",
+    "build": "next build --webpack",
+    "start": "next start --port 3200",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "16.4.2",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
+  }
+}

@@ -34,7 +34,7 @@ export const NAV_ITEMS: { label: string; scene: SceneName }[] = [
  * independently timed.
  */
 export const CONCEPT_FIGURES = [
-  { label: "0–60 mph · demo", value: 0.81, decimals: 2, unit: "s", suffix: "" },
+  { label: "0–60 mph · reveal run", value: 0.81, decimals: 2, unit: "s", suffix: "" },
   { label: "Top speed", value: 230, decimals: 0, unit: "mph", suffix: "+" },
   { label: "Range", value: 300, decimals: 0, unit: "mi", suffix: "" },
 ] as const;

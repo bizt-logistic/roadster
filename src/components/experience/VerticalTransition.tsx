@@ -28,7 +28,7 @@ export function VerticalOverlay() {
     <section className="split-copy" aria-labelledby="split-title">
       <div className="mono eyebrow">
         <span className="mask" data-s="split-line">
-          <span>04 — Vector</span>
+          <span>04 · Vector</span>
         </span>
       </div>
       <h2 id="split-title">

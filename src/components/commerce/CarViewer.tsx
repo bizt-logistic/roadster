@@ -47,7 +47,7 @@ export default function CarViewer({ className }: { className?: string }) {
       .then(setManifest);
   }, []);
   return (
-    <div className={className} aria-label="Interactive 3D view of the Roadster — drag to rotate" role="img">
+    <div className={className} aria-label="Interactive 3D view of the Roadster, drag to rotate" role="img">
       {manifest !== undefined && (
         <Canvas
           dpr={[1, 1.75]}

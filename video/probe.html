@@ -1,0 +1,11 @@
+<!doctype html><meta charset="utf-8"><title>probe</title>
+<body style="margin:0;background:#111;color:#eee;font:14px monospace">
+<canvas id="c"></canvas><pre id="o"></pre>
+<script>
+const v=document.createElement('video');v.src='src/hand.mp4';v.muted=true;v.preload='auto';
+const o=document.getElementById('o'),c=document.getElementById('c'),x=c.getContext('2d');
+window.seek=(t)=>new Promise(r=>{v.onseeked=()=>{c.width=v.videoWidth;c.height=v.videoHeight;x.drawImage(v,0,0);r([v.videoWidth,v.videoHeight,v.duration])};v.currentTime=t;});
+v.onloadedmetadata=async()=>{o.textContent=JSON.stringify({w:v.videoWidth,h:v.videoHeight,d:v.duration});
+ const enc=await VideoEncoder.isConfigSupported({codec:'avc1.640028',width:1080,height:1920,bitrate:12e6,framerate:30}).catch(e=>({err:String(e)}));
+ o.textContent+='\nh264 '+JSON.stringify(enc.supported??enc);await seek(0);};
+</script>

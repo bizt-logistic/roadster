@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { isTxHash } from "@/lib/commerce/crypto";
-import { getRepo } from "@/lib/server/repo";
+import { getRepo, paymentState } from "@/lib/server/repo";
 import { clientKey, rateLimited } from "@/lib/server/validate";
 
 export const runtime = "nodejs";
 
 /**
- * Customer says "I've sent the payment" for the next due installment,
+ * Customer says "I've sent the payment" for the next due installment while its payment details are live,
  * optionally with a transaction hash. An admin then verifies and confirms.
  */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -17,8 +17,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const repo = getRepo();
   const current = await repo.getOrder(id);
   if (!current) return NextResponse.json({ error: "Not found." }, { status: 404 });
-  const next = current.schedule.find((s) => s.status === "due");
-  if (!next) return NextResponse.json({ error: "Nothing is due on this reservation." }, { status: 409 });
+  const st = paymentState(current);
+  const next = st.next?.status === "due" ? st.next : null;
+  if (!next) return NextResponse.json({ error: "Nothing is due on this order." }, { status: 409 });
+  if (!st.live) {
+    return NextResponse.json({ error: st.expired ? "These payment details have expired. Please request new ones." : "Payment details haven't been issued yet." }, { status: 409 });
+  }
 
   const tx = (body.txHash ?? "").trim();
   const ref = (body.reference ?? "").trim().slice(0, 80);

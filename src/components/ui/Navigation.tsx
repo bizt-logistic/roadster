@@ -9,7 +9,7 @@ export function Navigation({ onNavigate, onCredits }: { onNavigate: (s: SceneNam
         className="nav__brand"
         href="#top"
         data-s="nav-item"
-        aria-label="Roadster fan concept — back to start"
+        aria-label="Roadster, back to start"
         onClick={(e) => {
           e.preventDefault();
           onNavigate("intro");

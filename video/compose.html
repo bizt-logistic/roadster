@@ -1,0 +1,306 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Promo compositor</title>
+<body style="margin:0;background:#000;color:#ddd;font:13px monospace">
+  <canvas id="gl" width="1080" height="1920" style="width:270px;height:480px"></canvas>
+  <pre id="log"></pre>
+  <script type="module">
+    // Composites the frame-by-frame site recording (frames/) onto the laptop
+    // screen in the hand plate (src/hand.mp4), then encodes an H.264 MP4 with
+    // WebCodecs and uploads it to out/. Driven from devtools:
+    //   await prepare();  await still(7.5);  render();  window.progress
+    import { Muxer, ArrayBufferTarget } from "./node_modules/mp4-muxer/build/mp4-muxer.mjs";
+
+    const OW = 1080, OH = 1920, FPS = 30, PLATE_FPS = 24;
+    const log = (s) => (document.getElementById("log").textContent += s + "\n");
+
+    const DIR = new URLSearchParams(location.search).get("frames") ?? "frames";
+    const meta = await (await fetch(`${DIR}/meta.json`, { cache: "no-store" })).json();
+    const v = document.createElement("video");
+    v.src = "src/hand.mp4";
+    v.muted = true;
+    v.preload = "auto";
+    await new Promise((r) => (v.onloadeddata = r));
+    const BW = v.videoWidth, BH = v.videoHeight;
+    const LOOP = Math.min(12, v.duration - 0.05);
+    const seek = (t) =>
+      new Promise((r) => {
+        v.onseeked = () => r();
+        v.currentTime = t;
+      });
+
+    // ---------- screen tracking on the plate ----------
+    const cpu = document.createElement("canvas");
+    cpu.width = BW;
+    cpu.height = BH;
+    const cx = cpu.getContext("2d", { willReadFrequently: true });
+    const THR = 0.62;
+
+    function fitLine(pts) {
+      // least squares b + a*t for pairs [t, value]
+      let n = pts.length, st = 0, sv = 0, stt = 0, stv = 0;
+      for (const [t, val] of pts) { st += t; sv += val; stt += t * t; stv += t * val; }
+      const a = (n * stv - st * sv) / (n * stt - st * st);
+      return { a, b: (sv - a * st) / n };
+    }
+
+    function detect() {
+      cx.drawImage(v, 0, 0);
+      const d = cx.getImageData(0, 0, BW, BH).data;
+      const lum = new Float32Array(BW * BH);
+      for (let i = 0; i < BW * BH; i++) lum[i] = (0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2]) / 255;
+      let seed = -1;
+      for (let r = 0; r < 60 && seed < 0; r += 2) {
+        const i = Math.round(BH * 0.38 + r) * BW + Math.round(BW * 0.5);
+        if (lum[i] > THR) seed = i;
+      }
+      if (seed < 0) return null;
+      const mask = new Uint8Array(BW * BH);
+      const stack = new Int32Array(BW * BH);
+      let sp = 0;
+      stack[sp++] = seed;
+      mask[seed] = 1;
+      let minX = BW, maxX = 0, minY = BH, maxY = 0;
+      while (sp) {
+        const i = stack[--sp], x = i % BW, y = (i / BW) | 0;
+        if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y;
+        for (const j of [i - 1, i + 1, i - BW, i + BW]) {
+          if (j < 0 || j >= BW * BH || mask[j] || lum[j] <= THR) continue;
+          mask[j] = 1;
+          stack[sp++] = j;
+        }
+      }
+      const w = maxX - minX, h = maxY - minY;
+      const cross = (a, b) => (THR - a) / (b - a);
+      const L = [], R = [], T = [], B = [];
+      for (let y = Math.round(minY + h * 0.15); y <= maxY - h * 0.15; y += 2) {
+        let x = minX; while (x < maxX && !mask[y * BW + x]) x++;
+        L.push([y, x - 1 + cross(lum[y * BW + x - 1], lum[y * BW + x])]);
+        x = maxX; while (x > minX && !mask[y * BW + x]) x--;
+        R.push([y, x + cross(lum[y * BW + x], lum[y * BW + x + 1])]);
+      }
+      for (let x = Math.round(minX + w * 0.08); x <= maxX - w * 0.08; x += 2) {
+        const f = (x - minX) / w;
+        let y = maxY; while (y > minY && !mask[y * BW + x]) y--;
+        B.push([x, y + cross(lum[y * BW + x], lum[(y + 1) * BW + x])]);
+        if (f > 0.4 && f < 0.6) continue; // camera notch
+        y = minY; while (y < maxY && !mask[y * BW + x]) y++;
+        T.push([x, y - 1 + cross(lum[(y - 1) * BW + x], lum[y * BW + x])]);
+      }
+      const l = fitLine(L), r = fitLine(R), t = fitLine(T), b = fitLine(B);
+      // x = l.a*y + l.b ; y = t.a*x + t.b
+      const meet = (vert, hor) => {
+        const x = (vert.a * hor.b + vert.b) / (1 - vert.a * hor.a);
+        return [x, hor.a * x + hor.b];
+      };
+      return [meet(l, t), meet(r, t), meet(r, b), meet(l, b)];
+    }
+
+    let track = null;
+    window.prepare = async () => {
+      const n = Math.floor(LOOP * PLATE_FPS);
+      const raw = [];
+      for (let i = 0; i <= n; i++) {
+        await seek(i / PLATE_FPS + 0.002);
+        raw.push(detect());
+      }
+      // temporal median (±4 frames) per coordinate
+      track = raw.map((_, i) =>
+        [0, 1, 2, 3].map((k) =>
+          [0, 1].map((c) => {
+            const vals = [];
+            for (let j = Math.max(0, i - 4); j <= Math.min(raw.length - 1, i + 4); j++) if (raw[j]) vals.push(raw[j][k][c]);
+            vals.sort((a, b) => a - b);
+            return vals[vals.length >> 1];
+          })
+        )
+      );
+      const xs = track.map((q) => q[0][0]);
+      log(`tracked ${track.length} plate frames; TL.x range ${Math.min(...xs).toFixed(2)}–${Math.max(...xs).toFixed(2)}`);
+      window.track = track;
+      return { n: track.length, first: track[0], last: track.at(-1), meta };
+    };
+    const cornersAt = (tb) => track[Math.min(track.length - 1, Math.round(tb * PLATE_FPS))];
+
+    // ---------- homography ----------
+    function squareToQuad(q) {
+      const [[x0, y0], [x1, y1], [x2, y2], [x3, y3]] = q;
+      const dx1 = x1 - x2, dx2 = x3 - x2, dx3 = x0 - x1 + x2 - x3;
+      const dy1 = y1 - y2, dy2 = y3 - y2, dy3 = y0 - y1 + y2 - y3;
+      const den = dx1 * dy2 - dx2 * dy1;
+      const g = (dx3 * dy2 - dx2 * dy3) / den, h = (dx1 * dy3 - dx3 * dy1) / den;
+      return [x1 - x0 + g * x1, x3 - x0 + h * x3, x0, y1 - y0 + g * y1, y3 - y0 + h * y3, y0, g, h, 1];
+    }
+    function inv3(m) {
+      const [a, b, c, d, e, f, g, h, i] = m;
+      const A = e * i - f * h, B = -(d * i - f * g), C = d * h - e * g;
+      const det = a * A + b * B + c * C;
+      return [A, -(b * i - c * h), b * f - c * e, B, a * i - c * g, -(a * f - c * d), C, -(a * h - b * g), a * e - b * d].map((x) => x / det);
+    }
+
+    // ---------- GL ----------
+    const canvas = document.getElementById("gl");
+    const gl = canvas.getContext("webgl2", { preserveDrawingBuffer: true, antialias: false });
+    const vs = `#version 300 es
+      in vec2 p; void main(){ gl_Position = vec4(p, 0., 1.); }`;
+    const fs = `#version 300 es
+      precision highp float;
+      uniform sampler2D uBg, uScr;
+      uniform mat3 uInv;
+      uniform vec2 uOut;
+      uniform float uAvg, uTime, uZoom;
+      uniform vec2 uZc;
+      out vec4 o;
+      float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+      void main(){
+        vec2 px = vec2(gl_FragCoord.x, uOut.y - gl_FragCoord.y);
+        vec2 uvBg = (uZc + (px - uZc) / uZoom) / uOut;
+        vec3 bg = texture(uBg, uvBg).rgb;
+        vec3 q = uInv * vec3(px, 1.);
+        vec2 s = q.xy / q.z;
+        float lum = dot(bg, vec3(.299, .587, .114));
+        // geometric screen mask, grown slightly past the tracked edge; the plate
+        // decides only around the camera notch
+        vec2 sd = min(s + 0.006, 1.006 - s);
+        float into = min(sd.x, sd.y);
+        float inside = smoothstep(0.0, 0.003, into);
+        float notch = step(s.y, 0.08) * step(abs(s.x - 0.5), 0.09);
+        float m = inside * mix(1.0, smoothstep(0.30, 0.55, lum), notch);
+        vec3 scr = textureLod(uScr, clamp(s, 0., 1.), 0.6).rgb;
+        scr *= mix(1.0, clamp(lum / 0.93, 0.62, 1.06), 0.55);   // the plate's own screen falloff
+        scr = scr * 0.955 + 0.022;                              // LCD black level on camera
+        float sheen = smoothstep(0.42, 0.0, abs(s.x * 0.75 - s.y * 0.55 - 0.18));
+        scr += 0.022 * sheen;
+        float below = max(s.y - 1.0, 0.0);
+        float spill = (1.0 - inside) * step(1.0, s.y) * exp(-below * 2.4)
+          * smoothstep(-0.35, 0.05, s.x) * smoothstep(1.35, 0.95, s.x);
+        vec3 lit = bg * (1.0 - spill * (1.0 - uAvg) * 0.42);
+        // the plate's white screen edge just outside the mask becomes bezel
+        float rim = (1.0 - inside) * smoothstep(0.03, 0.0, -into) * smoothstep(0.16, 0.45, lum);
+        lit = mix(lit, vec3(0.035), rim);
+        vec3 col = mix(lit, scr, m);
+        col += (hash(px + fract(uTime) * 97.0) - 0.5) * 0.02;
+        vec2 c = px / uOut - 0.5;
+        col *= 1.0 - dot(c, c) * 0.32;
+        o = vec4(col, 1.);
+      }`;
+    const sh = (type, src) => {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+      return s;
+    };
+    const prog = gl.createProgram();
+    gl.attachShader(prog, sh(gl.VERTEX_SHADER, vs));
+    gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, fs));
+    gl.linkProgram(prog);
+    gl.useProgram(prog);
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog, "p");
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    const U = (n) => gl.getUniformLocation(prog, n);
+    const tex = (unit, mip) => {
+      const t = gl.createTexture();
+      gl.activeTexture(gl.TEXTURE0 + unit);
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, mip ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      return t;
+    };
+    const tBg = tex(0, false), tScr = tex(1, true);
+    gl.uniform1i(U("uBg"), 0);
+    gl.uniform1i(U("uScr"), 1);
+    gl.uniform2f(U("uOut"), OW, OH);
+    gl.viewport(0, 0, OW, OH);
+
+    const avgCanvas = document.createElement("canvas");
+    avgCanvas.width = 16;
+    avgCanvas.height = 10;
+    const ac = avgCanvas.getContext("2d", { willReadFrequently: true });
+
+    async function loadFrame(f) {
+      const step = meta.every ?? 1;
+      const idx = Math.min(meta.frames - 1, Math.round(f / step) * step);
+      const blob = await (await fetch(`${DIR}/f${String(idx).padStart(4, "0")}.jpg`)).blob();
+      return createImageBitmap(blob);
+    }
+
+    async function drawFrame(f) {
+      const t = f / FPS;
+      const tb = t % LOOP;
+      await seek(tb);
+      const img = await loadFrame(f);
+      ac.drawImage(img, 0, 0, 16, 10);
+      const px = ac.getImageData(0, 0, 16, 10).data;
+      let sum = 0;
+      for (let i = 0; i < px.length; i += 4) sum += (0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]) / 255;
+      // slow push-in towards the screen over the whole video
+      const k = Math.min(1, t / (meta.frames / FPS));
+      const zoom = 1 + 0.1 * (k * k * (3 - 2 * k));
+      const base = cornersAt(tb).map(([x, y]) => [(x * OW) / BW, (y * OH) / BH]);
+      const zc = [base.reduce((a, p) => a + p[0], 0) / 4, base.reduce((a, p) => a + p[1], 0) / 4];
+      const q = base.map(([x, y]) => [zc[0] + (x - zc[0]) * zoom, zc[1] + (y - zc[1]) * zoom]);
+      gl.uniform1f(U("uZoom"), zoom);
+      gl.uniform2f(U("uZc"), zc[0], zc[1]);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, tBg);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, v);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, tScr);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      img.close();
+      const inv = inv3(squareToQuad(q));
+      // row-major → column-major
+      gl.uniformMatrix3fv(U("uInv"), false, [inv[0], inv[3], inv[6], inv[1], inv[4], inv[7], inv[2], inv[5], inv[8]]);
+      gl.uniform1f(U("uAvg"), sum / 160);
+      gl.uniform1f(U("uTime"), t);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+
+    const put = async (name, body) => (await fetch(`out/${name}`, { method: "PUT", body })).status;
+
+    window.still = async (t, name) => {
+      await drawFrame(Math.round(t * FPS));
+      const blob = await new Promise((r) => canvas.toBlob(r, "image/jpeg", 0.9));
+      return put(name ?? `still-${t}.jpg`, blob);
+    };
+
+    window.progress = { state: "idle" };
+    window.render = async (name = "roadster-tiktok.mp4", maxFrames = Infinity) => {
+      const N = Math.min(meta.frames, maxFrames);
+      window.progress = { state: "rendering", frame: 0, of: N };
+      const muxer = new Muxer({
+        target: new ArrayBufferTarget(),
+        video: { codec: "avc", width: OW, height: OH, frameRate: FPS },
+        fastStart: "in-memory",
+      });
+      let failure = null;
+      const enc = new VideoEncoder({ output: (c, m) => muxer.addVideoChunk(c, m), error: (e) => (failure = e) });
+      enc.configure({ codec: "avc1.640028", width: OW, height: OH, bitrate: 16_000_000, framerate: FPS, avc: { format: "avc" } });
+      const started = performance.now();
+      for (let f = 0; f < N; f++) {
+        if (failure) throw failure;
+        await drawFrame(f);
+        const frame = new VideoFrame(canvas, { timestamp: Math.round((f * 1e6) / FPS), duration: Math.round(1e6 / FPS) });
+        enc.encode(frame, { keyFrame: f % 60 === 0 });
+        frame.close();
+        while (enc.encodeQueueSize > 8) await new Promise((r) => setTimeout(r, 5));
+        window.progress = { state: "rendering", frame: f + 1, of: N, secs: Math.round((performance.now() - started) / 1000) };
+      }
+      await enc.flush();
+      muxer.finalize();
+      const status = await put(name, new Blob([muxer.target.buffer], { type: "video/mp4" }));
+      window.progress = { state: "done", status, bytes: muxer.target.buffer.byteLength, secs: Math.round((performance.now() - started) / 1000) };
+      return window.progress;
+    };
+    window.ready = true;
+    log(`plate ${BW}x${BH} ${v.duration.toFixed(2)}s · recording ${meta.frames} frames @ ${meta.fps}fps`);
+  </script>
+</body>

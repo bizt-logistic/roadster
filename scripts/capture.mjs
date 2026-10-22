@@ -128,7 +128,7 @@ async function main() {
 
   const t0 = Date.now();
   for (;;) {
-    const ready = await evaluate(`(() => { const l = document.querySelector('[data-s=loader]'); return !!l && getComputedStyle(l).visibility === 'hidden'; })()`).catch(() => false);
+    const ready = await evaluate(`(() => { return !!(window.__roadster && window.__roadster.introStarted); })()`).catch(() => false);
     if (ready) break;
     if (Date.now() - t0 > 180000) throw new Error("Timed out waiting for the experience to become ready");
     await sleep(500);
@@ -138,6 +138,21 @@ async function main() {
 
   const fps = await evaluate(`new Promise(r => { let n = 0; const s = performance.now(); const f = () => { n++; if (performance.now() - s < 2000) requestAnimationFrame(f); else r(Math.round(n / ((performance.now() - s) / 1000))); }; requestAnimationFrame(f); })`);
   console.log(`idle rAF rate: ~${fps} fps (headless/software GL — not representative of a real GPU)`);
+
+  // --scroll=.sel1,.sel2[:offsetPx] : scroll each element to the top of the viewport and capture
+  if (typeof args.scroll === "string") {
+    for (const spec of args.scroll.split(",")) {
+      const [sel, off = "0"] = spec.split(":");
+      await evaluate(`(() => { const el = document.querySelector(${JSON.stringify(sel)}); if (!el) return; const y = el.getBoundingClientRect().top + window.scrollY + ${Number(off)}; window.scrollTo(0, y); window.dispatchEvent(new Event("scroll")); })()`);
+      await sleep(SETTLE);
+      const shot = await send("Page.captureScreenshot", { format: "png" });
+      const file = path.join(OUT, `${sel.replace(/[^a-z0-9]+/gi, "_")}${off !== "0" ? "_" + off : ""}.png`);
+      fs.writeFileSync(file, Buffer.from(shot.data, "base64"));
+      console.log(`✓ ${path.relative(process.cwd(), file)}`);
+    }
+    ws.close();
+    return;
+  }
 
   for (const beat of BEATS) {
     await evaluate(`window.__roadster && window.__roadster.goto(${beat})`);

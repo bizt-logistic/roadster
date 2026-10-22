@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "roadster-admin",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["node_modules/next/dist/bin/next", "dev", "--webpack", "--port", "3200"],
+      "port": 3200
+    },
+    {
+      "name": "roadster-dev",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["../node_modules/next/dist/bin/next", "dev", "..", "--webpack", "--port", "3100"],
+      "port": 3100
+    }
+  ]
+}

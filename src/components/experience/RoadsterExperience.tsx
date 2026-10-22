@@ -7,7 +7,6 @@ import { TRACK_VH, type SceneName } from "@/components/animation/AnimationTimeli
 import { store, useStore } from "@/lib/store";
 import type { ModelManifest } from "@/components/three/RoadsterModel";
 import { Navigation } from "@/components/ui/Navigation";
-import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { CreditsDialog } from "@/components/ui/CreditsDialog";
 import { IntroOverlay } from "./IntroScene";
 import { WireframeRevealOverlay } from "./WireframeReveal";
@@ -89,7 +88,7 @@ export default function RoadsterExperience() {
 
       {webgl ? manifest !== undefined && <Stage manifest={manifest} /> : (
         <div className="layer" style={{ zIndex: 1 }}>
-          <p className="nowebgl mono">WebGL is unavailable — showing the typographic edition.</p>
+          <p className="nowebgl mono">WebGL is unavailable, showing the typographic edition.</p>
         </div>
       )}
 
@@ -106,7 +105,6 @@ export default function RoadsterExperience() {
 
       <Navigation onNavigate={onNavigate} onCredits={onCredits} />
       <CreditsDialog ref={credits} />
-      <LoadingScreen />
       <div className="track" data-s="track" style={{ height: `${TRACK_VH}vh` }} aria-hidden="true" />
     </div>
   );

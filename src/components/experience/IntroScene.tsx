@@ -20,7 +20,9 @@ export function IntroOverlay() {
       <div className="intro-copy" data-s="intro-copy">
         <div className="mono">
           <span className="mask" data-s="intro-reveal">
-            <span>Interactive fan concept · 01/09</span>
+            <span>
+              Interactive concept · 01/09
+            </span>
           </span>
         </div>
         <h1 className="intro-title">
@@ -51,7 +53,9 @@ export function IntroOverlay() {
           <div>Scale</div>
           <div>1:20</div>
           <div>Status</div>
-          <div>Unofficial fan concept</div>
+          <div>
+            Concept
+          </div>
         </div>
       </div>
 

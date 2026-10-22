@@ -15,6 +15,6 @@ export async function GET() {
       eth: active.some((w) => w.network === "eth-sepolia"),
       bank: banks.some((b) => b.active),
     },
-    rates: { btcUsd: settings.btcUsd, ethUsd: settings.ethUsd, ngnPerUsd: settings.ngnPerUsd },
+    rates: { btcUsd: settings.btcUsd, ethUsd: settings.ethUsd },
   });
 }

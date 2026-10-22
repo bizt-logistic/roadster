@@ -53,3 +53,11 @@ alter table public.settings       enable row level security;
 -- When you move admin login to Supabase Auth, add read policies for admins, e.g.
 --   create policy "admins read orders" on public.orders for select
 --     using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+-- Outbox: every email the site sends (meeting points for test drives).
+create table if not exists public.emails (
+  id text primary key,
+  created_at timestamptz not null default now(),
+  data jsonb not null
+);
+alter table public.emails enable row level security;

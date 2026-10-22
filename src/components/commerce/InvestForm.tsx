@@ -3,11 +3,11 @@
 import { useState, type FormEvent } from "react";
 import { INTERESTS, INVESTOR_TYPES, TICKETS } from "@/lib/commerce/leads";
 
-const COUNTRIES = ["Nigeria", "Ghana", "Kenya", "South Africa", "United States", "United Kingdom", "Canada", "United Arab Emirates", "Germany", "Other"];
+const COUNTRIES = ["United Kingdom", "Ireland", "France", "Germany", "Italy", "Spain", "Portugal", "Netherlands", "Belgium", "Luxembourg", "Switzerland", "Austria", "Monaco", "Sweden", "Norway", "Denmark", "Finland", "Poland", "Czech Republic", "Greece", "Other"];
 
 export function InvestForm() {
   const [v, setV] = useState({
-    name: "", email: "", phone: "", country: "Nigeria", organization: "",
+    name: "", email: "", phone: "", country: "United Kingdom", organization: "",
     investorType: INVESTOR_TYPES[0], ticket: TICKETS[0], interest: INTERESTS[1], message: "",
   });
   const [consent, setConsent] = useState(false);
@@ -38,7 +38,7 @@ export function InvestForm() {
       }
       setState("done");
     } catch {
-      setServerError("Network error — please try again.");
+      setServerError("Network error. Please try again.");
       setState("idle");
     }
   }
@@ -121,7 +121,8 @@ export function InvestForm() {
       <label className="consent">
         <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
         <span>
-          I understand this form only registers interest.  
+          I understand this form only registers interest. It is <strong>not an offer of securities</strong>, no money is
+          collected, and this concept is not affiliated with Tesla, Inc.
         </span>
       </label>
       {err("consent")}

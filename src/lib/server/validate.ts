@@ -9,11 +9,16 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE = /^\+?[0-9 ()-]{7,20}$/;
 
 export type OrderInput = {
+  kind: "reservation" | "test_drive";
   trimId: (typeof TRIMS)[number]["id"];
   colorId: string;
   planId: (typeof PLANS)[number]["id"];
   method: "btc" | "eth" | "bank" | "none";
   customer: { name: string; email: string; phone: string; country: string; city: string; address?: string };
+  addonIds: string[];
+  promoCode: string;
+  /** test drives only */
+  drive?: { packageId: string; locationId: string; date: string; time: string };
 };
 
 export function validateOrder(body: unknown): Result<OrderInput> {
@@ -24,10 +29,25 @@ export function validateOrder(body: unknown): Result<OrderInput> {
   const planId = str(b.planId) || "full";
   const colorId = str(b.colorId) || COLORS[0].id;
   const method = str(b.method);
+  const kind = b.kind === "test_drive" ? "test_drive" : "reservation";
+  const addonIds = Array.isArray(b.addonIds) ? b.addonIds.filter((x): x is string => typeof x === "string").slice(0, 12) : [];
+  const promoCode = str(b.promoCode).toUpperCase().slice(0, 24);
+  const d = (b.drive ?? {}) as Record<string, unknown>;
+  const drive = kind === "test_drive"
+    ? { packageId: str(d.packageId), locationId: str(d.locationId), date: str(d.date), time: str(d.time) }
+    : undefined;
+  if (drive) {
+    if (!drive.packageId) errors.packageId = "Choose an experience.";
+    if (!drive.locationId) errors.locationId = "Choose a location.";
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(drive.date)) errors.date = "Choose a date.";
+    if (!/^\d{2}:\d{2}$/.test(drive.time)) errors.time = "Choose a time.";
+    if (b.licence !== true) errors.licence = "A valid driver's licence is required to drive.";
+  }
   if (!TRIMS.some((t) => t.id === trimId)) errors.trimId = "Choose a version.";
   if (!PLANS.some((p) => p.id === planId)) errors.planId = "Choose a payment plan.";
   if (!COLORS.some((x) => x.id === colorId)) errors.colorId = "Choose a colour.";
-  const isRocket = trimId === "rocket";
+  // invitation-only versions are decided by the catalogue price on the server
+  const isRocket = kind === "reservation" && b.invitation === true;
   if (!isRocket && !["btc", "eth", "bank"].includes(method)) errors.method = "Choose a payment method.";
   const customer = {
     name: str(c.name),
@@ -43,14 +63,18 @@ export function validateOrder(body: unknown): Result<OrderInput> {
   if (customer.country.length < 2 || customer.country.length > 56) errors.country = "Choose your country.";
   if (customer.city.length < 1 || customer.city.length > 80) errors.city = "Enter your city.";
   if ((customer.address ?? "").length > 200) errors.address = "Address is too long.";
-  if (b.consent !== true) errors.consent = "Please confirm you understand this is a test-mode demo.";
+  if (b.consent !== true) errors.consent = "Please confirm you've read the note above.";
   if (Object.keys(errors).length) return { ok: false, errors };
   return {
     ok: true,
     value: {
+      kind,
+      addonIds,
+      promoCode,
+      drive,
       trimId: trimId as OrderInput["trimId"],
       colorId,
-      planId: planId as OrderInput["planId"],
+      planId: (kind === "test_drive" ? "full" : planId) as OrderInput["planId"],
       method: (isRocket ? "none" : method) as OrderInput["method"],
       customer,
     },

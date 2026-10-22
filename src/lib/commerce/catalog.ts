@@ -62,10 +62,8 @@ export const PLANS = [
 ] as const;
 export type PlanId = (typeof PLANS)[number]["id"];
 
-export type Currency = "USD" | "NGN";
-
-/** Indicative display rate; settlement currency in this demo is USD. */
-export const NGN_PER_USD = Number(process.env.NEXT_PUBLIC_NGN_PER_USD ?? 1550);
+/** Every price and payment is in US dollars. */
+export type Currency = "USD";
 
 export const getTrim = (id: string) => TRIMS.find((t) => t.id === id);
 export const getPlan = (id: string) => PLANS.find((p) => p.id === id);

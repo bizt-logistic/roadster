@@ -1,0 +1,8 @@
+{
+  "name": "roadster-promo-video",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "mp4-muxer": "^5.1.3"
+  }
+}

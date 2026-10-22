@@ -6,7 +6,7 @@ and is then choreographed through red performance reveals, camera studies, a
 multi-viewport showcase, a vertical red wake, an oversized typographic reveal and
 a smoke-filled finale.
 
-> **Unofficial Tesla Roadster Fan Concept — Not Affiliated with Tesla.**
+> **Unofficial concept · Not affiliated with Tesla, Inc.**
 > Concept design & development by Philip Ojo Oladeji. Tesla and Roadster are trademarks
 > of Tesla, Inc. No Tesla logos, fonts, imagery or code are used.
 
@@ -28,30 +28,81 @@ Then open http://localhost:3000 and scroll.
 |---|---|
 | `/` | The cinematic scroll experience |
 | `/gallery` | Studio renders of the car, scroll to browse |
+| `/test-drive` | Book a private test drive in a European city: car, experience, city, date and time, extras, promo code. The meeting point is emailed once the payment is confirmed |
 | `/reserve` | Choose a version, pay in full or in 3/6/12 installments with **Bitcoin, Ethereum or bank transfer** |
 | `/reserve/confirmation/<id>` | The customer's receipt: QR code, address, amount, live status |
 | `/invest` | Investor / partner interest form (no money collected) |
-| `/admin` | **Admin dashboard** — see below |
 
-### Payments (demo mode)
+### Admin-controlled pricing and offers
 
-Crypto is the primary method; bank transfer is optional. To keep the demo safe,
+Every amount a customer pays comes from a catalogue the admin edits (stored
+with the orders; defaults in `src/lib/commerce/offers.ts`):
+
+- **Vehicle reservation prices** per version (empty = invitation only), on/off sale.
+- **Test drives**: experiences with price and duration, locations, start times,
+  cars per slot, booking window and closed days. Slots fill up and close
+  automatically; the admin can mark drives completed / no-show or reschedule.
+- **Add-ons** at checkout (delivery priority, registration & plates, protection
+  plan, PPF, drive video, chauffeured pickup…), each for reservations, test drives or both.
+- **Promo codes**: percent or amount off, max uses, expiry.
+
+All prices and payments are in **US dollars**. The server recomputes every
+total; the browser never sets a price. Test drives are priced per car
+(Performance from $1,500, Thrust $2,500, Rocket $5,000 by default) plus an
+optional experience upgrade.
+
+### Home page
+
+After the cinematic scroll, three sections slide up over the final frame with
+scroll animations (masked headlines, staggered reveals, image parallax, a
+counting price and a city marquee): **Test drive** (from the cheapest live
+price, cars, cities, how it works), **Reserve** (versions, prices, monthly
+plans) and **Invest & partner**, each with a button to its page. Prices come
+from the admin's catalogue.
+
+### Test-drive emails
+
+Customers choose a city; the exact meeting point stays private. When the admin
+confirms the payment, the customer is emailed the meeting point, time (local to
+the city), directions and a calendar invite. Rescheduling a paid drive sends an
+update, and the admin can resend from the booking. Every email is kept in the
+admin's **Emails** page. To deliver them for real, set `RESEND_API_KEY`,
+`MAIL_FROM` and `PUBLIC_SITE_URL` in `.env.local` (https://resend.com);
+without a key they're saved to the outbox only.
+
+### Payment requests and expiring payment details
+
+Customers never see a wallet or account until an admin issues one:
+
+1. The customer books or reserves and chooses BTC, ETH or bank transfer. The
+   order starts as a **payment request**.
+2. The admin app alerts the team live (sound, toast, tab badge and optional
+   desktop notification) and lists it under **Payment requests**.
+3. The admin picks the receiving address or bank account, confirms or adjusts
+   the amount (USD) and sets how long the details are valid (15 min to 48 h).
+4. The customer's receipt shows the address, QR code and exact amount with a
+   countdown. When it expires the details disappear and the customer can
+   request new ones (with a fresh rate). Installment plans repeat this per installment.
+
+### Payments (test networks)
+
+Crypto is the primary method; bank transfer is optional. To keep it safe,
 **only test networks are accepted** — Bitcoin testnet and Ethereum Sepolia.
 Their coins have no monetary value, so every step can be demonstrated without
 moving real money.
 
-1. **Admin adds receiving addresses** (Admin → Wallets & banks): create an
+1. **Admin adds receiving addresses** (admin app → Wallets & banks): create an
    address in your own wallet app switched to Bitcoin testnet / Ethereum
    Sepolia, and paste it. The dashboard is **watch-only** — private keys never
    touch the server. Mainnet addresses are rejected. "Use sample testnet
-   addresses" fills placeholders for a quick demo.
-2. **Admin adds bank accounts** (optional) and sets the BTC/ETH/NGN rates.
-3. **Customer reserves**: the server recomputes the price, assigns an active
-   address/account (rotating), locks the rate and builds the installment
-   schedule with exact crypto amounts.
-4. **Customer pays**: the receipt shows a QR code (BIP-21 / EIP-681), the
-   address and amount, and an "I've sent the payment" button that accepts a
-   transaction hash. The page updates itself every 12 seconds.
+   addresses" fills placeholders for a quick walkthrough.
+2. **Admin adds bank accounts** (optional, USD) and sets the BTC/ETH rates.
+3. **Customer reserves or books**: the server recomputes the price in USD and
+   records a payment request with the customer's preferred method.
+4. **Admin generates the payment** (see above) and the customer pays: the
+   receipt shows a QR code (BIP-21 / EIP-681), the address and amount, a
+   countdown, and an "I've sent the payment" button that accepts a transaction
+   hash. The page updates itself every 12 seconds.
 5. **Admin verifies** the transaction on the explorer link and clicks
    **Confirm received** (or **Not found**). Status, paid total and the audit
    timeline update; the customer's receipt reflects it live.
@@ -59,13 +110,31 @@ moving real money.
 Going live is a deliberate change for a company deploying under **its own
 brand**, with its own wallets and its own compliance — not under the Tesla name.
 
-### Admin dashboard
+### Admin dashboard (separate app)
 
-`/admin` — sign in with `ADMIN_PASSWORD` from `.env.local` (copy
-`.env.example`; a local password was generated for you). Sections: Overview
-(KPIs, payments to review, method breakdown), Reservations (filter, search,
-confirm installments, cancel, timeline), Wallets & banks, Investor leads.
-The code lives in its own folder: `src/app/admin/`.
+The admin is **its own site** in [`admin-dashboard/`](admin-dashboard/README.md),
+with its own `package.json`, login and port. It stores nothing itself: it
+talks to this site only through the token-protected `/api/admin` endpoint.
+The public site has no `/admin` route.
+
+1. In this site's `.env.local` set `ADMIN_API_TOKEN` (a long random string).
+2. In `admin-dashboard/.env.local` (copy its `.env.example`) set the same
+   `ADMIN_API_TOKEN`, plus `SITE_URL`, `ADMIN_PASSWORD` and
+   `ADMIN_SESSION_SECRET`.
+3. Run both:
+
+```bash
+npm run dev -- --port 3100
+```
+
+```bash
+cd admin-dashboard && npm install && npm run dev
+```
+
+The admin opens on http://localhost:3200. Sections: Overview (revenue by stream, payments to
+review, upcoming drives), Reservations, Test drives (bookings + setup),
+Pricing & offers, Wallets & banks (testnet only), Investor leads. Everything
+is marked **Test networks**.
 
 ### Connecting Supabase
 
@@ -161,6 +230,19 @@ Key decisions:
 - **Accessibility.** Semantic headings for every scene, `prefers-reduced-motion`
   (no smooth scrolling or autoplay; animations become direct scroll positions),
   native `<dialog>` for credits, keyboard-focusable nav, WebGL-less fallback.
+
+## Promo video
+
+To rebuild the TikTok clip: run the production site on port 3100, then
+
+```bash
+node scripts/film.mjs --gpu --url=http://localhost:3100 --out=video/frames
+```
+
+start the `video-workspace` server (`node video/tools/serve.mjs`), open
+http://localhost:3300/compose.html and run `await prepare(); await render()`
+in the console. The result lands in `video/out/roadster-tiktok.mp4`. The desk
+and hand plate (`video/src/hand.mp4`) is AI-generated.
 
 ## Testing
 

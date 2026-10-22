@@ -305,27 +305,26 @@ export function createDirector(root: HTMLElement, opts: { reducedMotion: boolean
 
   // ── autoplay intro (time-based, runs once the model is ready) ────────────
   const playIntro = () => {
+    // No loading screen: the page shows immediately and the drawing starts
+    // as soon as the model is ready. QA scripts wait for this flag.
+    (window as unknown as { __roadster?: { introStarted?: boolean } }).__roadster!.introStarted = true;
     ctx.add(() => {
-      const loader = document.querySelector("[data-s=loader]");
       if (reduced) {
         rig.introDraw = 1;
         rig.introConstruct = 1;
-        gsap.set(loader, { autoAlpha: 0 });
         gsap.set(q("[data-s=intro-reveal] > *"), { yPercent: 0 });
         gsap.set(q("[data-s=nav-item], [data-s=dim-inner], [data-s=titleblock-inner], [data-s=scroll-cue-inner]"), { autoAlpha: 1, y: 0 });
         return;
       }
       const intro = gsap.timeline({ defaults: { ease: "expo.out" } });
       intro
-        .to(loader, { clipPath: "inset(0% 0% 100% 0%)", duration: 1.2, ease: "expo.inOut" }, 0)
-        .set(loader, { autoAlpha: 0 })
-        .fromTo(q("[data-s=nav-item]"), { y: -14, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 1.1, stagger: 0.06 }, 0.75)
-        .to(rig, { introConstruct: 1, duration: 2.8, ease: "power1.inOut" }, 0.6)
-        .to(rig, { introDraw: 1, duration: 5.6, ease: "power1.inOut" }, 1.1)
-        .fromTo(q("[data-s=intro-reveal] > *"), { yPercent: 115 }, { yPercent: 0, duration: 1.5, stagger: 0.12 }, 1.0)
-        .fromTo(q("[data-s=dim-inner]"), { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: 0.9, stagger: 0.18 }, 2.6)
-        .fromTo(one("[data-s=titleblock-inner]"), { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: 1.2 }, 3.2)
-        .fromTo(one("[data-s=scroll-cue-inner]"), { autoAlpha: 0, y: -8 }, { autoAlpha: 1, y: 0, duration: 1.2 }, 4.4);
+        .fromTo(q("[data-s=nav-item]"), { y: -14, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 1.1, stagger: 0.06 }, 0.1)
+        .to(rig, { introConstruct: 1, duration: 2.8, ease: "power1.inOut" }, 0)
+        .to(rig, { introDraw: 1, duration: 5.6, ease: "power1.inOut" }, 0.4)
+        .fromTo(q("[data-s=intro-reveal] > *"), { yPercent: 115 }, { yPercent: 0, duration: 1.5, stagger: 0.12 }, 0.3)
+        .fromTo(q("[data-s=dim-inner]"), { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: 0.9, stagger: 0.18 }, 1.9)
+        .fromTo(one("[data-s=titleblock-inner]"), { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: 1.2 }, 2.5)
+        .fromTo(one("[data-s=scroll-cue-inner]"), { autoAlpha: 0, y: -8 }, { autoAlpha: 1, y: 0, duration: 1.2 }, 3.7);
     });
     lenis?.start();
   };
@@ -335,8 +334,11 @@ export function createDirector(root: HTMLElement, opts: { reducedMotion: boolean
   // QA hook used by scripts/capture.mjs to jump to exact timeline beats.
   (window as unknown as { __roadster?: unknown }).__roadster = {
     goto(beat: number) {
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      const y = (Math.min(SCENES.end, Math.max(0, beat)) / SCENES.end) * max;
+      // map onto the scroll track only (the page continues below it)
+      const st = tl.scrollTrigger;
+      const start = st ? st.start : 0;
+      const end = st ? st.end : document.documentElement.scrollHeight - window.innerHeight;
+      const y = start + (Math.min(SCENES.end, Math.max(0, beat)) / SCENES.end) * (end - start);
       if (lenis) lenis.scrollTo(y, { immediate: true, force: true });
       else window.scrollTo(0, y);
     },
